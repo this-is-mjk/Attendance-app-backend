@@ -7,11 +7,14 @@ import numpy as np
 from deepface import DeepFace
 from PIL import Image
 import cv2
+from flask_cors import CORS
 
 #Load pretrained face detection model    
 net = cv2.dnn.readNetFromCaffe('./saved_model/deploy.prototxt.txt', './saved_model/res10_300x300_ssd_iter_140000.caffemodel')
 
 app = Flask(__name__)
+CORS(app)
+# CORS(app, resources={r"/*": {"origins": "*"}})  # Allow all origins
 
 client = MongoClient('localhost', 27017)
 db = client.AttendenceApp
@@ -19,7 +22,6 @@ users = db.users
 
 @app.route('/check-student', methods=['get'])
 def check_user():
-    pr
     data = request.get_json()
     if not data or 'user_id' not in data or data['user_id'] == '':
         return jsonify({'error': 'Bad Request'}), 400
@@ -98,11 +100,12 @@ def check_face(image1, image2):
         # delete the memory used by the files
         os.remove('img1.jpg')
         os.remove('img2.jpg')
-
+        # print(result)
         return result['verified']
     except Exception as e:
         print(e)
         return False
+    
 def extrat_face(image):
     global net
     image = np.array(Image.open(image))
@@ -133,5 +136,5 @@ def extrat_face(image):
     return image_binary
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    app.run(host="localh.st", port=5000, debug=True)
     # app.run()
