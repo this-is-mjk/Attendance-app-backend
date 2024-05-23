@@ -9,6 +9,7 @@ demo vedio link:- https://drive.google.com/file/d/1dHEqofvBiVSwp0DsM_fATmrwoBwef
 frontend:-https://github.com/this-is-mjk/Attendance-App.git
 
 backend:- https://github.com/this-is-mjk/Attendance-app-backend.git
+this repo have a bit more, you can test it yourself bysing the admin_db_object with your image or use the images in the test_images, it have many images to explore, with mine as manas1, manas2.
 
 initially i thought of deploying them that's why i made 2 repos
 
@@ -117,5 +118,3 @@ Custom exceptions are used to handle errors and return appropriate responses:
 3. came to know about Flask and DeepFace technologies
 4. helped me to brush me up with a few mongo db resources and python
 5. came to know about pip freeze > requirements.txt to list all requirements easily.
-
-### fronend
