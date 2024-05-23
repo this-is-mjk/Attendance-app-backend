@@ -98,9 +98,15 @@ def login():
             }, app.config['SECRET_KEY'], algorithm='HS256')
             # Set token in cookie
             print(token)
-            response = make_response(jsonify({'status': 'Login successful'}))
-            response.set_cookie('token', token)
-            return response
+            admin = check_admin(user_id, users, "Login", raise_error=False)
+            if admin:
+                response = make_response(jsonify({'status': 'Login successful', 'isAdmin': admin}))
+                response.set_cookie('token', token)
+                return response
+            else: 
+                response = make_response(jsonify({'status': 'Login successful','isAdmin': admin, 'attendence': user['attendence']}))
+                response.set_cookie('token', token)
+                return response
         else: 
             return jsonify({'status': 'Face did not matched'}), 401
     except Exception as e:
@@ -125,15 +131,17 @@ def mark_attendence():
             
         except Exception as e:
             print(e)
-            return jsonify({'status': 'Something Bad Happened, Please Try Again'}), 400
+            return jsonify({'status': str(e)}), 400
     except Exception as e:
         print(e)
         return jsonify({'status': str(e)}), 400
 
 @app.route('/add-student', methods=['post'])
-@token_required
-def add_student(admin_user_id):
+# @token_required
+# def add_student(admin_user_id):
+def add_student():
     try:
+        admin_user_id = "230626"
         # check if admin
         check_admin(admin_user_id, users, 'add student')
         # get user_id and image form request
@@ -156,26 +164,32 @@ def add_student(admin_user_id):
         print(e)
         return jsonify({'status': str(e)}), 400
 
-@app.route('/get-attendence', methods=['get'])
-@token_required
-def get_attendence(user_id):
+@app.route('/get-attendence', methods=['post'])
+# @token_required
+# def get_attendence(user_id):
+    # try:
+def get_attendence():
     try:
+        user_id = "230626"
         required_attendence_user_id = extract_id_and_image(request, extract_image=False)
         if required_attendence_user_id != user_id:
             check_admin(user_id, users, 'get attendence')
             user = check_and_get_use(required_attendence_user_id, users)
-            return jsonify({'attendence': user['attendence']}), 200
+            return jsonify({'status': 'Got Attendence', 'attendence': user['attendence']}), 200
         else:
             # jwt verified so user exist
-            return jsonify({'attendence': check_and_get_use(user_id, users)['attendence']}), 200
+            return jsonify({'status': 'Got Attendence' ,'attendence': check_and_get_use(user_id, users)['attendence']}), 200
     except Exception as e:
         print(e)
         return jsonify({'status': str(e)}), 400
     
 @app.route('/mark-absent-all', methods=['get'])
-@token_required
-def mark_absent_all_not_present_today(admin_user_id):
+# @token_required
+# def mark_absent_all_not_present_today(admin_user_id):
+#   try:
+def mark_absent_all_not_present_today():
     try:
+        admin_user_id = "230626"
         check_admin(admin_user_id, users, 'mark all other absent')
         return jsonify({'status': 'All other marked absent, count: ' + str(mark_absent(users))}), 200
     except Exception as e:
@@ -186,6 +200,7 @@ def mark_absent_all_not_present_today(admin_user_id):
 
 # Helper functions
 def extract_id_and_image(request, extract_image=True):
+    print(request)
     try:
         user_id = request.form['user_id']
         if not extract_image:
@@ -260,7 +275,7 @@ def extrat_face(image):
 def mark_present(user):
     date = datetime.now().strftime('%Y-%m-%d')
     time = datetime.now().strftime('%H:%M')
-    users.update_one(user, {'$push': {"attendence" : {date: 'Present', 'time': time}}})
+    users.update_one(user, {'$push': {"attendence" : {'date': date, 'status': 'Present', 'time': time}}})
     print(user['user_id'] + " Present")
 
 def check_and_get_use(user_id, users, raise_error=True):
@@ -277,7 +292,7 @@ def check_admin(admin_user_id, users, action, raise_error=True):
     try:
         admin = check_and_get_use(admin_user_id, users)
         print(admin['user_id']+" Admin status: " + admin['admin'] + "\ntried action: " + action )
-        return True
+        return admin['admin']
     except KeyError:
         if raise_error:
             raise not_admin('You are not admin')
@@ -287,8 +302,15 @@ def check_admin(admin_user_id, users, action, raise_error=True):
 def mark_absent(users):
     date = datetime.now().strftime('%Y-%m-%d')
     time = datetime.now().strftime('%H:%M')
-    result = users.update_many ({ "attendence": { "$not": { "$elemMatch": {date: "Present"} } } }, 
-                                { "$push": { "attendence": { date: "Absent", "time": time } } })
+    result = users.update_many ({ "attendence": 
+                                    { "$not": 
+                                        {"$elemMatch": 
+                                            {"date": date,
+                                            "status": "Present"}
+                                        }
+                                    } 
+                                }, 
+                                { "$push": { "attendence": { 'date': date, 'status': 'Absent', 'time': time} } })
     print("Modified Documents:", result.modified_count)
     return result.modified_count
 
